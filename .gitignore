@@ -1,0 +1,5 @@
+.idea
+*.log
+.vscode
+node_modules
+sensor_data.db
