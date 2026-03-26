@@ -269,13 +269,11 @@ func decode(raw_buf []byte, shouldDecode bool) {
 // Removed duplicate pollHIDDeviceLoop function. The correct one is at the end of the file.
 
 // initDB initializes the SQLite database
-func initDB(filepath string) error {
+func initDB(dbPath string) error {
 	// Ensure the directory exists
-	dir := filepath
-	if lastSlash := strings.LastIndex(dir, "/"); lastSlash != -1 {
-		if err := os.MkdirAll(dir[:lastSlash], 0755); err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
+	dir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	var err error
@@ -318,7 +316,7 @@ func saveReading(temp float32, co2Val uint16) error {
 }
 
 func main() {
-	dbPath := flag.String("dbpath", "./sensor_data.db", "Path to SQLite database file")
+	dbPath := flag.String("dbpath", "/app/data/sensor_data.db", "Path to SQLite database file")
 	flag.Parse()
 
 	if err := initDB(*dbPath); err != nil {
