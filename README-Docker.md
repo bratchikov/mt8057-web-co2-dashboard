@@ -12,13 +12,12 @@
 
 ```
 .
-├── Dockerfile              # Dockerfile для Go backend
+├── Dockerfile              # Dockerfile для Go backend (с встроенным frontend)
 ├── docker-compose.yml      # Конфигурация Docker Compose
 ├── .dockerignore          # Файлы, исключенные из образа
-├── frontend/
-│   ├── Dockerfile         # Dockerfile для frontend
-│   ├── nginx.conf         # Конфигурация nginx
-│   └── .dockerignore      # Файлы, исключенные из образа frontend
+├── frontend/              # Исходный код frontend (Vue.js)
+│   ├── .dockerignore      # Файлы, исключенные из образа frontend
+│   └── ...
 └── data/                  # Директория для хранения данных SQLite (создается автоматически)
 ```
 
@@ -30,15 +29,15 @@
 mkdir data
 ```
 
-> **Примечание:** Данные SQLite базы будут сохраняться в директории `./data` на хосте, что обеспечивает их сохранность при перезапуске контейнеров.
+> **Примечание:** Данные SQLite базы будут сохраняться в директории `./data` на хосте, что обеспечивает их сохранность при перезапуске контейнера.
 
-### 2. Соберите и запустите контейнеры
+### 2. Соберите и запустите контейнер
 
 ```bash
 docker-compose up -d --build
 ```
 
-### 3. Проверьте статус контейнеров
+### 3. Проверьте статус контейнера
 
 ```bash
 docker-compose ps
@@ -46,8 +45,10 @@ docker-compose ps
 
 ### 4. Доступ к приложению
 
-- **Frontend**: http://localhost:8080
-- **Backend API**: http://localhost:8072
+- **Приложение**: http://localhost:8072/ui (или http://localhost:8072)
+- **Backend API**: http://localhost:8072/api
+
+> **Примечание:** Frontend теперь обслуживается тем же Go backend через `router.StaticFS("/ui", ...)`.
 
 ## Управление контейнерами
 
@@ -59,9 +60,6 @@ docker-compose logs -f
 
 # Только backend
 docker-compose logs -f backend
-
-# Только frontend
-docker-compose logs -f frontend
 ```
 
 ### Остановка контейнеров
@@ -137,6 +135,15 @@ mkdir -p data
 chmod 755 data
 ```
 
+### Ошибка "unable to open database file"
+
+Эта ошибка может возникнуть, если директория `/app/data` не существует в контейнере. В новой версии Dockerfile директория создается автоматически, но если вы используете старый образ, выполните:
+
+```bash
+docker-compose down -v
+docker-compose up -d --build
+```
+
 ## Переменные окружения
 
 ### Backend
@@ -150,18 +157,18 @@ chmod 755 data
 ### Backend (Go)
 
 - Порт: 8072
-- SQLite база данных: `/app/sensor_data.db`
+- SQLite база данных: `/app/data/sensor_data.db`
 - WebSocket: `/ws`
 - API endpoints:
   - `GET /api/data/latest` - Последние N измерений
   - `GET /api/data/history` - Исторические данные за период
+- Frontend (статические файлы): `/ui` (обслуживается тем же backend)
 
-### Frontend (Vue.js + Nginx)
+### Frontend (Vue.js)
 
-- Порт: 8080
-- Статические файлы: `/usr/share/nginx/html`
-- Проксирование API: `/api` → `backend:8072`
-- Проксирование WebSocket: `/ws` → `backend:8072`
+- Собирается в процессе сборки backend-образа
+- Доступен по пути `/ui` через Go backend
+- Удален отдельный nginx контейнер для упрощения архитектуры
 
 ## Разработка
 

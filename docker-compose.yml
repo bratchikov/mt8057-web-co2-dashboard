@@ -13,16 +13,3 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Asia/Yekaterinburg
-
-  frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    container_name: co2-frontend
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-    environment:
-      - TZ=Asia/Yekaterinburg
