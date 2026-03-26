@@ -2,13 +2,8 @@
 .git
 .gitignore
 
-# Go
-*.go
-*.mod
-*.sum
-go.sum
-main
-main.exe
+# Go (keep go.mod and go.sum for build)
+# *.go files are needed for build
 *.db
 *.sqlite
 *.sqlite3
