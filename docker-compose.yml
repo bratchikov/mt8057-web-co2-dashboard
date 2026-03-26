@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: co2-backend
+    ports:
+      - "8072:8072"
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
+    volumes:
+      - ./data:/app/data:rw
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Yekaterinburg
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: co2-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Yekaterinburg
