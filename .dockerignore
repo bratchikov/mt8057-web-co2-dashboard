@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+
+# Go
+*.go
+*.mod
+*.sum
+go.sum
+main
+main.exe
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+dist
+bin
+obj
+
+# Test files
+*_test.go
+*_test
+test
+
+# Documentation
+README.md
+*.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Logs
+*.log
+
+# Data directory (use volume instead)
+data
+
+# Frontend
+frontend/node_modules
+frontend/.vite
+frontend/.git

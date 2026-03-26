@@ -1,0 +1,36 @@
+# Node modules
+node_modules
+
+# Build output
+dist
+.vite
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Logs
+*.log
+
+# Public assets (usually you don't ignore these, but for build context it's fine)
+# public
