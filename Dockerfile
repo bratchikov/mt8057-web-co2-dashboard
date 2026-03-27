@@ -40,7 +40,7 @@ FROM alpine:3.18
 WORKDIR /app
 
 # Install required packages
-RUN apk add --no-cache ca-certificates eudev input-utils
+RUN apk add --no-cache ca-certificates eudev
 
 # Create non-root user and add to input group for hidraw access
 RUN addgroup -g 1000 -S appgroup && \
@@ -59,7 +59,7 @@ COPY --from=backend-builder /app/frontend/dist ./frontend/dist
 RUN chown -R appuser:appgroup /app
 
 # Ensure data directory exists with proper permissions (even with volume mount)
-RUN mkdir -p /app/data && chown appuser:appgroup /app/data && chmod 777 /app/data
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 USER appuser
 

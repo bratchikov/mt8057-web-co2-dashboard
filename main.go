@@ -276,8 +276,23 @@ func initDB(dbPath string) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	// Check if the database file already exists and fix permissions if needed
+	if _, err := os.Stat(dbPath); err == nil {
+		// File exists, ensure it's writable
+		if err := os.Chmod(dbPath, 0666); err != nil {
+			log.Printf("Warning: Could not chmod database file: %v", err)
+		}
+		// Also check for -journal file and fix permissions
+		journalPath := dbPath + "-journal"
+		if _, err := os.Stat(journalPath); err == nil {
+			if err := os.Chmod(journalPath, 0666); err != nil {
+				log.Printf("Warning: Could not chmod journal file: %v", err)
+			}
+		}
+	}
+
 	var err error
-	db, err = sql.Open("sqlite3", dbPath)
+	db, err = sql.Open("sqlite3", dbPath+"?_busy_timeout=5000")
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
