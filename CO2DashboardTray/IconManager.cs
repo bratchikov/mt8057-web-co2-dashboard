@@ -112,68 +112,13 @@ public class IconManager
     /// </summary>
     private void SaveBitmapAsIcon(Bitmap bitmap, string filePath)
     {
-        // Создать ICO файл вручную
+        // Используем более простой подход - создаем иконку напрямую из Bitmap
+        // Windows Forms Icon класс не поддерживает PNG-вложенные ICO файлы
+        // Поэтому используем GetHicon() для создания иконки напрямую
+        
+        using Icon icon = Icon.FromHandle(bitmap.GetHicon());
         using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-        
-        // ICO header (6 bytes)
-        fs.WriteByte(0); // Reserved
-        fs.WriteByte(0); // Reserved
-        fs.WriteByte(1); // Type: 1 = icon, 2 = cursor
-        fs.WriteByte(0);
-        
-        // Number of images (1)
-        fs.WriteByte(1);
-        fs.WriteByte(0);
-        
-        // Image directory entry (16 bytes)
-        int width = (int)bitmap.Width;
-        int height = (int)bitmap.Height;
-        fs.WriteByte((byte)(width == 256 ? 0 : width)); // Width
-        fs.WriteByte((byte)(height == 256 ? 0 : height)); // Height
-        fs.WriteByte(0); // Color count
-        fs.WriteByte(0); // Reserved
-        fs.WriteByte(0); // Color planes
-        fs.WriteByte(0);
-        fs.WriteByte(32); // Bits per pixel
-        fs.WriteByte(0);
-        
-        // Write image data size (placeholder)
-        long sizePosition = fs.Position;
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        
-        // Write image data offset (placeholder)
-        long offsetPosition = fs.Position;
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        fs.WriteByte(0);
-        
-        // Save bitmap as PNG to memory stream
-        using MemoryStream pngStream = new MemoryStream();
-        bitmap.Save(pngStream, System.Drawing.Imaging.ImageFormat.Png);
-        byte[] pngData = pngStream.ToArray();
-        
-        // Write image data size
-        long currentPos = fs.Position;
-        fs.Seek(sizePosition, SeekOrigin.Begin);
-        fs.WriteByte((byte)(pngData.Length));
-        fs.WriteByte((byte)(pngData.Length >> 8));
-        fs.WriteByte((byte)(pngData.Length >> 16));
-        fs.WriteByte((byte)(pngData.Length >> 24));
-        
-        // Write image data offset
-        fs.Seek(offsetPosition, SeekOrigin.Begin);
-        fs.WriteByte((byte)(currentPos + 4));
-        fs.WriteByte((byte)((currentPos + 4) >> 8));
-        fs.WriteByte((byte)((currentPos + 4) >> 16));
-        fs.WriteByte((byte)((currentPos + 4) >> 24));
-        
-        // Write image data
-        fs.Seek(currentPos, SeekOrigin.Begin);
-        fs.Write(pngData);
+        icon.Save(fs);
     }
 
     /// <summary>
