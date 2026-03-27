@@ -46,9 +46,8 @@ public class DataClient
             
             return null;
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Ошибка при получении данных: {ex.Message}");
             return null;
         }
     }
@@ -80,15 +79,18 @@ public class Reading
     /// <summary>
     /// Время измерения
     /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; }
 
     /// <summary>
     /// Температура (°C)
     /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("temperature")]
     public double Temperature { get; set; }
 
     /// <summary>
     /// Уровень CO2 (ppm)
     /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("co2")]
     public int Co2 { get; set; }
 }

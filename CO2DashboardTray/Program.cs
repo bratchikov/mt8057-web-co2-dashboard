@@ -19,5 +19,5 @@ static class Program
         // Приложение работает в фоне, без GUI форм
         // Application.Run() не вызывается, приложение сворачивается в трей
         Application.Run();
-    }    
+    }
 }
