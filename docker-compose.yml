@@ -8,6 +8,7 @@ services:
       - "8072:8072"
     devices:
       - "/dev/bus/usb:/dev/bus/usb"
+      - "/dev/hidraw0:/dev/hidraw0"
     volumes:
       - ./data:/app/data:rw
     restart: unless-stopped
