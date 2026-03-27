@@ -445,9 +445,9 @@ func main() {
 	router.GET("/ws", handleConnections)
 
 	// Serve static files for frontend
-	router.StaticFS("/ui", http.Dir("./frontend/dist"))
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/ui/index.html")
+	router.StaticFS("/", http.Dir("./frontend/dist"))
+	router.GET("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "message": "CO2 Dashboard API"})
 	})
 
 	log.Println("Starting server on :8072")
