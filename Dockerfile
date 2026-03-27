@@ -47,7 +47,7 @@ RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup input
 
 # Create data directory with proper permissions
-RUN mkdir -p /app/data && chmod 1777 /app/data
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Copy built binary
 COPY --from=backend-builder /app/main .

@@ -272,8 +272,13 @@ func decode(raw_buf []byte, shouldDecode bool) {
 func initDB(dbPath string) error {
 	// Ensure the directory exists
 	dir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0777); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	// Ensure directory has proper permissions (especially important for volume mounts)
+	if err := os.Chmod(dir, 0777); err != nil {
+		log.Printf("Warning: Could not chmod directory %s: %v", dir, err)
 	}
 
 	// Check if the database file already exists and fix permissions if needed
