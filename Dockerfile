@@ -46,8 +46,8 @@ RUN apk add --no-cache ca-certificates eudev
 RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup input
 
-# Create data directory
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chmod 1777 /app/data
 
 # Copy built binary
 COPY --from=backend-builder /app/main .
@@ -55,11 +55,8 @@ COPY --from=backend-builder /app/main .
 # Copy frontend build
 COPY --from=backend-builder /app/frontend/dist ./frontend/dist
 
-# Set ownership
+# Set ownership - but data dir permissions will be handled at runtime
 RUN chown -R appuser:appgroup /app
-
-# Ensure data directory exists with proper permissions (even with volume mount)
-RUN mkdir -p /app/data && chmod 777 /app/data
 
 USER appuser
 
