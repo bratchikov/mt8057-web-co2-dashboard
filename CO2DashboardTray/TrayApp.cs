@@ -193,6 +193,11 @@ public class TrayApp : IDisposable
         // Создать контекстное меню
         contextMenu = new ContextMenuStrip();
         
+        // Пункт Open Dashboard
+        var openDashboardItem = new ToolStripMenuItem("Открыть dashboard");
+        openDashboardItem.Click += OpenDashboardMenuItem_Click;
+        contextMenu.Items.Add(openDashboardItem);
+        
         // Пункт Settings
         var settingsItem = new ToolStripMenuItem("Настройки");
         settingsItem.Click += SettingsMenuItem_Click;
@@ -262,6 +267,35 @@ public class TrayApp : IDisposable
                 UseShellExecute = true
             });
         }
+    }
+
+    /// <summary>
+    /// Открыть dashboard в браузере
+    /// </summary>
+    private void OpenDashboard()
+    {
+        if (settings == null) return;
+        
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = settings.ServerUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error opening dashboard: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Обработчик открытия dashboard
+    /// </summary>
+    private void OpenDashboardMenuItem_Click(object? sender, EventArgs e)
+    {
+        OpenDashboard();
     }
 
     /// <summary>
