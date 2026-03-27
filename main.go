@@ -277,7 +277,7 @@ func initDB(dbPath string) error {
 	}
 
 	var err error
-	db, err = sql.Open("sqlite3", filepath)
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
