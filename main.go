@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -268,13 +269,40 @@ func decode(raw_buf []byte, shouldDecode bool) {
 // Removed duplicate pollHIDDeviceLoop function. The correct one is at the end of the file.
 
 // initDB initializes the SQLite database
-func initDB(filepath string) error {
+func initDB(dbPath string) error {
+	// Ensure the directory exists
+	dir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	// Ensure directory has proper permissions (especially important for volume mounts)
+	if err := os.Chmod(dir, 0777); err != nil {
+		log.Printf("Warning: Could not chmod directory %s: %v", dir, err)
+	}
+
+	// Check if the database file already exists and fix permissions if needed
+	if _, err := os.Stat(dbPath); err == nil {
+		// File exists, ensure it's writable
+		if err := os.Chmod(dbPath, 0666); err != nil {
+			log.Printf("Warning: Could not chmod database file: %v", err)
+		}
+		// Also check for -journal file and fix permissions
+		journalPath := dbPath + "-journal"
+		if _, err := os.Stat(journalPath); err == nil {
+			if err := os.Chmod(journalPath, 0666); err != nil {
+				log.Printf("Warning: Could not chmod journal file: %v", err)
+			}
+		}
+	}
+
 	var err error
-	db, err = sql.Open("sqlite3", filepath)
+	db, err = sql.Open("sqlite3", dbPath+"?_busy_timeout=5000")
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Test the connection and create table
 	createTableSQL := `CREATE TABLE IF NOT EXISTS readings (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -308,7 +336,7 @@ func saveReading(temp float32, co2Val uint16) error {
 }
 
 func main() {
-	dbPath := flag.String("dbpath", "./sensor_data.db", "Path to SQLite database file")
+	dbPath := flag.String("dbpath", "/app/data/sensor_data.db", "Path to SQLite database file")
 	flag.Parse()
 
 	if err := initDB(*dbPath); err != nil {
@@ -316,46 +344,49 @@ func main() {
 	}
 	defer db.Close()
 
-	dev, err := hid.OpenFirst(0x04d9, 0xa052)
-	if err != nil {
-		fmt.Printf("can't open device - %v\n", err)
-		os.Exit(1)
-	}
-
-	// Determine if data should be decoded based on device release number
 	var shouldDecodeData bool
-	deviceInfo, err := dev.GetDeviceInfo()
+	var dev *hid.Device
+	var err error
+
+	dev, err = hid.OpenFirst(0x04d9, 0xa052)
 	if err != nil {
-		log.Printf("Warning: Could not get device info: %v. Assuming older device (will decode).", err)
-		shouldDecodeData = true
+		log.Printf("Warning: Could not open HID device (0x04d9:0xa052): %v", err)
+		log.Printf("Running in simulation mode - no sensor data will be collected")
 	} else {
-		log.Printf("Device Info from go-hid: Path=%s, VendorID=0x%04x, ProductID=0x%04x, ReleaseNbr=0x%04x, InterfaceNbr=%d",
-			deviceInfo.Path, deviceInfo.VendorID, deviceInfo.ProductID, deviceInfo.ReleaseNbr, deviceInfo.InterfaceNbr)
-		// Logic from C-code (co2mon.c): decode_data = 1 (decode) if release_number <= 0x0100
-		if deviceInfo.ReleaseNbr <= 0x0100 {
+		// Determine if data should be decoded based on device release number
+		deviceInfo, err := dev.GetDeviceInfo()
+		if err != nil {
+			log.Printf("Warning: Could not get device info: %v. Assuming older device (will decode).", err)
 			shouldDecodeData = true
-			log.Println("Device ReleaseNbr <= 0x0100. Data will be decoded.")
 		} else {
-			shouldDecodeData = false
-			log.Println("Device ReleaseNbr > 0x0100. Data will NOT be decoded (treated as 'new' device model).")
+			log.Printf("Device Info from go-hid: Path=%s, VendorID=0x%04x, ProductID=0x%04x, ReleaseNbr=0x%04x, InterfaceNbr=%d",
+				deviceInfo.Path, deviceInfo.VendorID, deviceInfo.ProductID, deviceInfo.ReleaseNbr, deviceInfo.InterfaceNbr)
+			// Logic from C-code (co2mon.c): decode_data = 1 (decode) if release_number <= 0x0100
+			if deviceInfo.ReleaseNbr <= 0x0100 {
+				shouldDecodeData = true
+				log.Println("Device ReleaseNbr <= 0x0100. Data will be decoded.")
+			} else {
+				shouldDecodeData = false
+				log.Println("Device ReleaseNbr > 0x0100. Data will NOT be decoded (treated as 'new' device model).")
+			}
 		}
+
+		// Send initial feature report (Report ID 0, 8 zero bytes of data)
+		// This is analogous to co2mon_send_magic_table(dev, magic_table) in C
+		sendReportBuf := make([]byte, 9) // Report ID + 8 bytes data
+		sendReportBuf[0] = 0x00
+
+		bytesSent, err := dev.SendFeatureReport(sendReportBuf)
+		if err != nil {
+			log.Fatalf("Error sending initial feature report to HID device: %v", err)
+		}
+		log.Printf("Initial feature report sent. Bytes written: %d", bytesSent)
+		log.Println("Decryption key logic is now handled within decode function (effectively a zero key if decoding).")
+
+		// Start goroutine for continuous HID data polling
+		go pollHIDDeviceLoop(dev, shouldDecodeData)
+		log.Println("HID polling goroutine started.")
 	}
-
-	// Send initial feature report (Report ID 0, 8 zero bytes of data)
-	// This is analogous to co2mon_send_magic_table(dev, magic_table) in C
-	sendReportBuf := make([]byte, 9) // Report ID + 8 bytes data
-	sendReportBuf[0] = 0x00
-
-	bytesSent, err := dev.SendFeatureReport(sendReportBuf)
-	if err != nil {
-		log.Fatalf("Error sending initial feature report to HID device: %v", err)
-	}
-	log.Printf("Initial feature report sent. Bytes written: %d", bytesSent)
-	log.Println("Decryption key logic is now handled within decode function (effectively a zero key if decoding).")
-
-	// Start goroutine for continuous HID data polling
-	go pollHIDDeviceLoop(dev, shouldDecodeData)
-	log.Println("HID polling goroutine started.")
 
 	// Goroutine for periodic saving to DB and broadcasting via WebSocket
 	go func() {
@@ -413,7 +444,7 @@ func main() {
 	// WebSocket route
 	router.GET("/ws", handleConnections)
 
-	// Serve static files for frontend
+	// Serve static files for frontend - use StaticFS with /ui prefix to avoid conflicts with API routes
 	router.StaticFS("/ui", http.Dir("./frontend/dist"))
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/ui/index.html")
