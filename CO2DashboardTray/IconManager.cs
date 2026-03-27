@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace CO2DashboardTray;
 
-public enum ArrowDirection { Rising, Stable, Falling }
+public enum TrendDirection { Rising, Stable, Falling }
 
 public class IconManager
 {
@@ -20,7 +20,7 @@ public class IconManager
     public Icon CreateIcon(int currentCo2, int previousCo2)
     {
         Color color = GetColorByCo2Level(currentCo2);
-        ArrowDirection direction = GetArrowDirection(currentCo2, previousCo2);
+        TrendDirection direction = GetTrendDirection(currentCo2, previousCo2);
         int size = CalculateIconSize(GetDpiScale());
         
         // КРИТИЧНО: Использовать Format32bppArgb для прозрачности
@@ -29,17 +29,20 @@ public class IconManager
         
         using (Graphics g = Graphics.FromImage(bitmap))
         {
-            // Настройка качества
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.CompositingQuality = CompositingQuality.HighQuality;
+            // Для маленьких размеров (16x16) отключаем AntiAlias - он не нужен и замедляет
+            if (size > 16)
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+            }
             
             // Прозрачный фон
             g.Clear(Color.Transparent);
             
-            // Рисуем стрелку программно
-            DrawArrow(g, size, color, direction);
+            // Рисуем треугольник или круг программно
+            DrawTrendIcon(g, size, color, direction);
         }
         
         // Создаём иконку без временного файла
@@ -83,58 +86,56 @@ public class IconManager
         }
     }
     
-    private void DrawArrow(Graphics g, int size, Color color, ArrowDirection direction)
+    private void DrawTrendIcon(Graphics g, int size, Color color, TrendDirection direction)
     {
-        float pad = size * 0.15f;
-        float w = size - pad * 2;
-        float h = size - pad * 2;
-        
-        PointF[] points = direction switch
-        {
-            ArrowDirection.Rising => new PointF[]
-            {
-                new(pad, pad + h * 0.7f),
-                new(pad + w * 0.35f, pad + h * 0.7f),
-                new(pad + w * 0.35f, pad + h * 0.35f),
-                new(pad + w, pad),
-                new(pad + w * 0.65f, pad),
-                new(pad + w * 0.65f, pad + h * 0.35f),
-                new(pad, pad + h * 0.35f),
-            },
-            ArrowDirection.Stable => new PointF[]
-            {
-                new(pad, pad + h * 0.35f),
-                new(pad + w * 0.5f, pad + h * 0.35f),
-                new(pad + w, pad + h * 0.5f),
-                new(pad + w * 0.5f, pad + h * 0.65f),
-                new(pad, pad + h * 0.65f),
-            },
-            ArrowDirection.Falling => new PointF[]
-            {
-                new(pad, pad),
-                new(pad + w * 0.35f, pad),
-                new(pad + w * 0.35f, pad + h * 0.35f),
-                new(pad + w, pad + h * 0.7f),
-                new(pad + w * 0.65f, pad + h * 0.7f),
-                new(pad + w * 0.65f, pad + h * 0.35f),
-                new(pad, pad + h * 0.35f),
-            },
-            _ => Array.Empty<PointF>()
-        };
+        float pad = size * 0.2f;
+        float maxDim = size - pad * 2;
         
         using SolidBrush brush = new SolidBrush(color);
-        g.FillPolygon(brush, points);
         
-        // Тонкая обводка для лучшей видимости
-        using Pen pen = new Pen(Color.FromArgb(64, 0, 0, 0), size / 24f);
-        g.DrawPolygon(pen, points);
+        switch (direction)
+        {
+            case TrendDirection.Rising:
+                // Треугольник остриём вверх
+                float risingPad = size * 0.25f;
+                float risingSize = size - risingPad * 2;
+                PointF[] risingTriangle = new PointF[]
+                {
+                    new(risingPad + risingSize / 2, risingPad),      // верхняя вершина
+                    new(risingPad, risingPad + risingSize),         // левый нижний
+                    new(risingPad + risingSize, risingPad + risingSize) // правый нижний
+                };
+                g.FillPolygon(brush, risingTriangle);
+                break;
+                
+            case TrendDirection.Stable:
+                // Круг
+                float circleSize = size * 0.5f;
+                float circleX = (size - circleSize) / 2;
+                float circleY = (size - circleSize) / 2;
+                g.FillEllipse(brush, circleX, circleY, circleSize, circleSize);
+                break;
+                
+            case TrendDirection.Falling:
+                // Треугольник остриём вниз
+                float fallingPad = size * 0.25f;
+                float fallingSize = size - fallingPad * 2;
+                PointF[] fallingTriangle = new PointF[]
+                {
+                    new(fallingPad, fallingPad),                     // левый верхний
+                    new(fallingPad + fallingSize, fallingPad),       // правый верхний
+                    new(fallingPad + fallingSize / 2, fallingPad + fallingSize) // нижняя вершина
+                };
+                g.FillPolygon(brush, fallingTriangle);
+                break;
+        }
     }
     
-    public ArrowDirection GetArrowDirection(int current, int previous)
+    public TrendDirection GetTrendDirection(int current, int previous)
     {
-        if (current > previous) return ArrowDirection.Rising;
-        if (current < previous) return ArrowDirection.Falling;
-        return ArrowDirection.Stable;
+        if (current > previous) return TrendDirection.Rising;
+        if (current < previous) return TrendDirection.Falling;
+        return TrendDirection.Stable;
     }
     
     private Color GetColorByCo2Level(int co2)

@@ -146,16 +146,16 @@ public class TrayApp : IDisposable
         {
             notifyIcon.Icon = iconManager.CreateIcon(co2, previousCo2Value);
             // Формат tooltip
-            ArrowDirection arrowDir = iconManager.GetArrowDirection(co2, previousCo2Value);
-            string arrowText = arrowDir switch
+            TrendDirection trendDir = iconManager.GetTrendDirection(co2, previousCo2Value);
+            string trendText = trendDir switch
             {
-                ArrowDirection.Rising => "↗",
-                ArrowDirection.Stable => "→",
-                ArrowDirection.Falling => "↘",
+                TrendDirection.Rising => "▲",
+                TrendDirection.Stable => "●",
+                TrendDirection.Falling => "▼",
                 _ => ""
             };
-            notifyIcon.Text = $"CO2: {co2} ppm {arrowText} | Температура: {temperature?.ToString("F1")}°C";
-            Trace.WriteLine($"Tray icon updated: CO2={co2}, arrow={arrowText}");
+            notifyIcon.Text = $"CO2: {co2} ppm {trendText} | Температура: {temperature?.ToString("F1")}°C";
+            Trace.WriteLine($"Tray icon updated: CO2={co2}, trend={trendText}");
         }
         catch (Exception ex)
         {
