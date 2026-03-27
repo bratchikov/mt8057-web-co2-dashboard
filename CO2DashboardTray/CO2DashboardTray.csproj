@@ -6,12 +6,15 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- SupportedOSPlatformVersion и TargetPlatformMinVersion удалены - конфликтуют с TargetFramework -->
   </PropertyGroup>
 
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- System.Drawing.Common не требуется для .NET 10 - встроен в Windows Forms -->
   </ItemGroup>
 
 </Project>

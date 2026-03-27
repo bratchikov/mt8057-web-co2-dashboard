@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Timers;
 
 namespace CO2DashboardTray;
@@ -16,6 +17,9 @@ public class TrayApp : IDisposable
     private Settings? settings;
     private DataClient? dataClient;
     private IconManager? iconManager;
+    
+    // Для обработки DPI-изменений
+    private Form? _hiddenForm;
 
     /// <summary>
     /// Инициализация приложения
@@ -32,6 +36,9 @@ public class TrayApp : IDisposable
         // Инициализация previousCo2Value значением NormalThreshold
         previousCo2Value = settings!.NormalThreshold;
         
+        // Создать скрытую форму для обработки DPI-событий
+        CreateHiddenForm();
+        
         // Создание NotifyIcon
         CreateNotifyIcon();
         
@@ -39,7 +46,46 @@ public class TrayApp : IDisposable
         CreateTimer();
         
         // Обновление иконки при запуске
-        UpdateTrayIcon();
+        try
+        {
+            UpdateTrayIcon();
+            Trace.WriteLine("Tray icon initialized successfully");
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error initializing tray icon: {ex.Message}");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Создать скрытую форму для обработки DPI-событий
+    /// </summary>
+    private void CreateHiddenForm()
+    {
+        _hiddenForm = new Form
+        {
+            FormBorderStyle = FormBorderStyle.None,
+            ShowInTaskbar = false,
+            WindowState = FormWindowState.Minimized,
+            Opacity = 0
+        };
+        _hiddenForm.DpiChanged += OnDpiChanged;
+        _hiddenForm.Show();
+        _hiddenForm.Hide();
+    }
+    
+    /// <summary>
+    /// Обработчик изменения DPI
+    /// </summary>
+    private void OnDpiChanged(object? sender, DpiChangedEventArgs e)
+    {
+        if (notifyIcon != null && iconManager != null)
+        {
+            // Перегенерировать иконку при изменении DPI
+            UpdateTrayIcon();
+            Trace.WriteLine("DPI changed");
+        }
     }
 
     /// <summary>
@@ -82,17 +128,39 @@ public class TrayApp : IDisposable
         // Если сервер недоступен, показать серую иконку
         if (currentCo2 == null)
         {
-            notifyIcon.Icon = iconManager.CreateDisconnectedIcon();
-            notifyIcon.Text = "Сервер недоступен";
+            try
+            {
+                notifyIcon.Icon = iconManager.CreateDisconnectedIcon();
+                notifyIcon.Text = "Сервер недоступен";
+                Trace.WriteLine("Disconnected icon set");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Error setting disconnected icon: {ex.Message}");
+            }
             return;
         }
         
         // Создать иконку с текущим состоянием
-        notifyIcon.Icon = iconManager.CreateIcon(co2, previousCo2Value);
-        
-        // Формат tooltip
-        string arrow = iconManager.GetArrowDirection(co2, previousCo2Value);
-        notifyIcon.Text = $"CO2: {co2} ppm ({arrow}) | Температура: {temperature?.ToString("F1")}°C";
+        try
+        {
+            notifyIcon.Icon = iconManager.CreateIcon(co2, previousCo2Value);
+            // Формат tooltip
+            ArrowDirection arrowDir = iconManager.GetArrowDirection(co2, previousCo2Value);
+            string arrowText = arrowDir switch
+            {
+                ArrowDirection.Rising => "↑",
+                ArrowDirection.Stable => "→",
+                ArrowDirection.Falling => "↓",
+                _ => ""
+            };
+            notifyIcon.Text = $"CO2: {co2} ppm ({arrowText}) | Температура: {temperature?.ToString("F1")}°C";
+            Trace.WriteLine($"Tray icon updated: CO2={co2}, arrow={arrowText}");
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error creating tray icon: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -102,8 +170,16 @@ public class TrayApp : IDisposable
     {
         if (iconManager == null || notifyIcon == null) return;
         
-        notifyIcon.Icon = iconManager.CreateDisconnectedIcon();
-        notifyIcon.Text = "Сервер недоступен";
+        try
+        {
+            notifyIcon.Icon = iconManager.CreateDisconnectedIcon();
+            notifyIcon.Text = "Сервер недоступен";
+            Trace.WriteLine("Disconnected icon set");
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Error setting disconnected icon: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -201,5 +277,8 @@ public class TrayApp : IDisposable
         
         timer?.Dispose();
         contextMenu?.Dispose();
+        
+        // Освободить скрытую форму
+        _hiddenForm?.Dispose();
     }
 }
