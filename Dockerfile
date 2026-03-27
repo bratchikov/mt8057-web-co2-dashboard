@@ -40,11 +40,11 @@ FROM alpine:3.18
 WORKDIR /app
 
 # Install required packages
-RUN apk add --no-cache ca-certificates eudev
+RUN apk add --no-cache ca-certificates eudev input-utils
 
-# Create non-root user
+# Create non-root user and add to input group for hidraw access
 RUN addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup
+    adduser -u 1000 -S appuser -G appgroup input
 
 # Create data directory
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
