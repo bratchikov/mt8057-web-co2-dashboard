@@ -128,20 +128,20 @@ public class Settings
 - `NotifyIcon` - значок в трее
 - `Timer` - периодический опрос (настраиваемый интервал)
 - `ContextMenuStrip` - контекстное меню
-- `previousCo2Value` - хранит предыдущее значение CO2 для определения направления стрелки (сбрасывается при перезапуске, начальное значение = WarningThreshold)
+- `previousCo2Value` - хранит предыдущее значение CO2 для определения направления стрелки (сбрасывается при перезапуске, начальное значение = NormalThreshold)
 
 **Методы:**
 - `LoadSettings()` - загрузить настройки
 - `FetchData()` - получить данные с сервера
 - `UpdateTrayIcon()` - обновить иконку (вызывает IconManager.CreateIcon())
 - `ShowTooltip()` - показать tooltip
-- `OnTimerTick()` - обработчик таймера (вызывает FetchData и UpdateTrayIcon)
+- `OnTimerTick()` - обработчик таймера (вызывает FetchData и UpdateTrayIcon())
 - `ExitMenuItem_Click()` - обработчик выхода из приложения
 - `SettingsMenuItem_Click()` - обработчик открытия настроек
 
 **Концепция работы:**
 1. При запуске загружаются настройки из SettingsManager
-2. previousCo2Value инициализируется значением WarningThreshold из настроек (начальное значение для сравнения)
+2. previousCo2Value инициализируется значением NormalThreshold из настроек (начальное значение для сравнения)
 3. Запускается Timer с интервалом PollingIntervalSeconds
 4. При срабатывании таймера вызывается FetchData()
 5. Если данные получены успешно, UpdateTrayIcon() создает новую иконку через IconManager
@@ -217,21 +217,14 @@ public class Settings
 | Стабильно | → | Стрелка горизонтальная |
 | Падение | ↘ | Стрелка направлена вниз-вправо |
 
-**Кружок (для серой иконкиDisconnected):**
+**Кружок (для серой иконки Disconnected):**
 - Простой круг без стрелки
 - Центр иконки
 - Радиус ~6-7 пикселей (для 16x16)
 
 ### 5.2 Tooltip формат
 
-```
-CO2: 450 ppm  [↗]
-Температура: 22.5°C
-Сервер: localhost:8072
-Последнее обновление: 13:04:30
-```
-
-> **Примечание:** Tooltip не содержит цветные эмодзи из-за ограничений WinForms. Стрелка отображается как текстовый символ.
+Одна строка: `CO2: 450 ppm (стрелка направления) | Температура: 22.5°C`
 
 ## 6. Обработка ошибок
 
@@ -283,7 +276,7 @@ dotnet CO2DashboardTray.dll
 2. **Настройки** - Settings.cs, SettingsManager.cs (файл `appsettings.json` рядом с приложением)
 3. **DataClient** - HTTP клиент для API (GET /api/data/latest?count=1)
 4. **IconManager** - создание иконок через GDI+ с поддержкой DPI (Bitmap 16x16, 32x32 и т.д., рисование стрелки или кружка)
-5. **TrayApp** - основной класс приложения (NotifyIcon, Timer, ContextMenuStrip, инициализация previousCo2Value = WarningThreshold)
+5. **TrayApp** - основной класс приложения (NotifyIcon, Timer, ContextMenuStrip, инициализация previousCo2Value = NormalThreshold)
 6. **Протестировать** - проверить все сценарии (подключение, ошибки, смена значений, DPI масштабирование)
 
 ## 10. Примечания
@@ -292,5 +285,5 @@ dotnet CO2DashboardTray.dll
 - Настройки хранятся в файле `appsettings.json` рядом с приложением
 - По умолчанию опрос каждые 60 секунд
 - Пороги по умолчанию: Normal=1000 ppm, Warning=1500 ppm
-- При перезапуске начальное значение CO2 для сравнения = WarningThreshold
+- При перезапуске начальное значение CO2 для сравнения = NormalThreshold
 - Поддержка масштабирования DPI (100%-300%)
