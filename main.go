@@ -434,10 +434,7 @@ func main() {
 	// Setup Gin router
 	router := gin.Default()
 
-	// Serve static files for frontend FIRST (before API routes to avoid conflicts)
-	router.StaticFS("/", http.Dir("./frontend/dist"))
-
-	// API routes
+	// API routes - must be registered before static files to avoid conflicts with wildcard routes
 	apiGroup := router.Group("/api")
 	{
 		apiGroup.GET("/data/latest", getLatestData)
@@ -446,6 +443,9 @@ func main() {
 
 	// WebSocket route
 	router.GET("/ws", handleConnections)
+
+	// Serve static files for frontend - use Static instead of StaticFS to avoid wildcard conflicts
+	router.Static("/", "./frontend/dist")
 
 	log.Println("Starting server on :8072")
 	if err := router.Run(":8072"); err != nil {
