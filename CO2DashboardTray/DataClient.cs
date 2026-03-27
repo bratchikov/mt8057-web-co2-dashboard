@@ -46,8 +46,9 @@ public class DataClient
             
             return null;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Ошибка при получении данных: {ex.Message}");
             return null;
         }
     }
