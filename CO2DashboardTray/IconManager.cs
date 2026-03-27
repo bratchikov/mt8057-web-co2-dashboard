@@ -139,9 +139,10 @@ public class IconManager
     
     private Color GetColorByCo2Level(int co2)
     {
-        if (co2 < 600) return GreenColor;
-        if (co2 < 1000) return OrangeColor;
-        if (co2 < 1400) return OrangeColor;
+        Settings settings = SettingsManager.LoadSettings();
+        
+        if (co2 <= settings.NormalThreshold) return GreenColor;
+        if (co2 <= settings.WarningThreshold) return OrangeColor;
         return RedColor;
     }
     

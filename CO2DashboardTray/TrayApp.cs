@@ -149,12 +149,12 @@ public class TrayApp : IDisposable
             ArrowDirection arrowDir = iconManager.GetArrowDirection(co2, previousCo2Value);
             string arrowText = arrowDir switch
             {
-                ArrowDirection.Rising => "↑",
+                ArrowDirection.Rising => "↗",
                 ArrowDirection.Stable => "→",
-                ArrowDirection.Falling => "↓",
+                ArrowDirection.Falling => "↘",
                 _ => ""
             };
-            notifyIcon.Text = $"CO2: {co2} ppm ({arrowText}) | Температура: {temperature?.ToString("F1")}°C";
+            notifyIcon.Text = $"CO2: {co2} ppm {arrowText} | Температура: {temperature?.ToString("F1")}°C";
             Trace.WriteLine($"Tray icon updated: CO2={co2}, arrow={arrowText}");
         }
         catch (Exception ex)
